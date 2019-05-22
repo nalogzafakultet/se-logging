@@ -1,0 +1,28 @@
+version: '3.4'
+
+services:
+
+  logging:
+    container_name: logging
+    build:
+      context: ./services/logging
+    volumes:
+      # while working on code to reflect the changes
+      - './services/logging:/usr/src/app'
+    ports:
+      - 5001:5000
+    environment:
+      - FLASK_DEBUG=1
+      - APP_SETTINGS=project.config.BaseConfig
+      - DATABASE_URL=postgres://postgres:postgres@logs-db:5432/logs_db
+
+  logs-db:
+    container_name: logs-db
+    build:
+      context: ./services/db
+      dockerfile: Dockerfile
+    ports:
+      - 5435:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres

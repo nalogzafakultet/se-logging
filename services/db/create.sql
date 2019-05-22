@@ -1,0 +1,1 @@
+CREATE DATABASE logs_db;
