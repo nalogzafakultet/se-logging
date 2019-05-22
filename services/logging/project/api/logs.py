@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from project.api.models import Log
 from project import db
 from sqlalchemy import exc
+from datetime import datetime
 
 logs_blueprint = Blueprint('logs', __name__)
 
@@ -24,8 +25,20 @@ def add_log():
 
     service = post_data.get('service')
     endpoint = post_data.get('endpoint')
+    visitor_ip = post_data.get('visitor_ip')
+    visit_time = post_data.get('visit_time')
+
+    if type(visit_time) != int:
+        response_object['message'] = 'sanity check. time should be in milis'
+        return jsonify(response_object), 400
+
     try:
-        db.session.add(Log(service, endpoint))
+        db.session.add(Log(
+            service=service, 
+            endpoint=endpoint,
+            visit_time=datetime.fromtimestamp(visit_time // 1000),
+            visitor_ip=visitor_ip
+        ))
         db.session.commit()
         response_object = {
             'status': 'success',
@@ -45,3 +58,29 @@ def all_logs():
         }
     }
     return jsonify(response_object), 200
+
+@logs_blueprint.route('/logs/<log_id>', methods=['GET'])
+def get_log_by_id(log_id):
+    response_object = {
+        'status': 'fail',
+        'message': 'Log does not exist.'
+    }
+
+    try:
+        log = Log.query.filter_by(id=int(log_id)).first()
+        if not log:
+            return jsonify(response_object), 404
+        else:
+            response_object = {
+                'status': 'success',
+                'data': {
+                    'id': log.id,
+                    'service': log.service,
+                    'endpoint': log.endpoint,
+                    'visit_time': log.visit_time,
+                    'visitor_ip': log.visitor_ip
+                }
+            }
+            return jsonify(response_object), 200
+    except ValueError:
+        return jsonify(response_object), 404
